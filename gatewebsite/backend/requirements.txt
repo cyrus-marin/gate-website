@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+x402
+supabase
+requests
+httpx
+python-dotenv
