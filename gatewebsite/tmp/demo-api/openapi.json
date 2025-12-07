@@ -1,37 +1,127 @@
 {
-    "openapi": "3.0.0",
-    "info": {
-        "title": "Demo API",
-        "version": "1.0.0"
-    },
-    "paths": {
-        "/users": {
-            "get": {
-                "summary": "List all users",
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            },
-            "post": {
-                "summary": "Create a user",
-                "responses": {
-                    "201": {
-                        "description": "Created"
-                    }
-                }
-            }
-        },
-        "/users/{id}": {
-            "get": {
-                "summary": "Get user by ID",
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        }
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Large Test API",
+    "version": "1.0.0",
+    "description": "Test API with many endpoints for pagination testing"
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com/v1"
     }
+  ],
+  "paths": {
+    "/users": {
+      "get": {
+        "summary": "List all users",
+        "description": "Retrieve a paginated list of all users"
+      },
+      "post": {
+        "summary": "Create a user",
+        "description": "Create a new user account"
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "summary": "Get user by ID",
+        "description": "Retrieve detailed information about a specific user"
+      },
+      "put": {
+        "summary": "Update user",
+        "description": "Update an existing user's information"
+      },
+      "delete": {
+        "summary": "Delete user",
+        "description": "Remove a user from the system"
+      }
+    },
+    "/products": {
+      "get": {
+        "summary": "List all products",
+        "description": "Get a list of all available products"
+      },
+      "post": {
+        "summary": "Create product",
+        "description": "Add a new product to the catalog"
+      }
+    },
+    "/products/{id}": {
+      "get": {
+        "summary": "Get product by ID",
+        "description": "Retrieve details for a specific product"
+      },
+      "put": {
+        "summary": "Update product",
+        "description": "Modify product information"
+      },
+      "delete": {
+        "summary": "Delete product",
+        "description": "Remove a product from the catalog"
+      }
+    },
+    "/orders": {
+      "get": {
+        "summary": "List all orders",
+        "description": "Get a list of all orders"
+      },
+      "post": {
+        "summary": "Create order",
+        "description": "Place a new order"
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "summary": "Get order by ID",
+        "description": "Retrieve order details"
+      },
+      "put": {
+        "summary": "Update order",
+        "description": "Modify order information"
+      },
+      "delete": {
+        "summary": "Cancel order",
+        "description": "Cancel an existing order"
+      }
+    },
+    "/categories": {
+      "get": {
+        "summary": "List categories",
+        "description": "Get all product categories"
+      },
+      "post": {
+        "summary": "Create category",
+        "description": "Add a new category"
+      }
+    },
+    "/categories/{id}": {
+      "get": {
+        "summary": "Get category",
+        "description": "Get category details"
+      },
+      "put": {
+        "summary": "Update category",
+        "description": "Modify category"
+      },
+      "delete": {
+        "summary": "Delete category",
+        "description": "Remove category"
+      }
+    },
+    "/inventory": {
+      "get": {
+        "summary": "Check inventory",
+        "description": "View current inventory levels"
+      },
+      "post": {
+        "summary": "Update inventory",
+        "description": "Modify inventory quantities"
+      }
+    },
+    "/search": {
+      "get": {
+        "summary": "Search API",
+        "description": "Search across products and users"
+      }
+    }
+  }
 }

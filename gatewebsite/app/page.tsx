@@ -10,17 +10,25 @@ import EndpointRateEditor from '@/components/EndpointRateEditor';
 import { Endpoint } from '@/components/EndpointTable';
 import { Loader2, User, LogOut } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { supabase } from '@/lib/supabase';
 
 export default function Home() {
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { user, signOut, walletAddress } = useAuth();
   const [isScanning, setIsScanning] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [endpoints, setEndpoints] = useState<Endpoint[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [serviceName, setServiceName] = useState('');
   const [description, setDescription] = useState('');
+
+  const ENDPOINTS_PER_PAGE = 10;
+  const totalPages = Math.ceil(endpoints.length / ENDPOINTS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ENDPOINTS_PER_PAGE;
+  const endIndex = startIndex + ENDPOINTS_PER_PAGE;
+  const paginatedEndpoints = endpoints.slice(startIndex, endIndex);
 
   const handleScan = async (url: string) => {
     // Require authentication before scanning
@@ -43,6 +51,7 @@ export default function Home() {
 
       if (data.endpoints && data.endpoints.length > 0) {
         setEndpoints(data.endpoints);
+        setCurrentPage(1); // Reset to first page
         setServiceName(new URL(url).hostname); // Default name
         setIsModalOpen(true);
       } else {
@@ -59,9 +68,31 @@ export default function Home() {
   const handlePublish = async () => {
     setIsPublishing(true);
     try {
+      // Get authentication token (either Supabase session or wallet address)
+      let authToken: string;
+      
+      if (walletAddress) {
+        // Use wallet address as auth token for Web3 users
+        authToken = walletAddress;
+      } else {
+        // Use Supabase session token for email/password users
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          alert('Please sign in to publish');
+          setIsPublishing(false);
+          return;
+        }
+        
+        authToken = session.access_token;
+      }
+
       const res = await fetch('/api/publish', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
         body: JSON.stringify({
           serviceName,
           description,
@@ -193,7 +224,48 @@ export default function Home() {
             <p className="text-xs text-monokai-gray/70 mb-4">
               Configure x402 rates for each endpoint. Leave at 0 for free endpoints.
             </p>
-            <EndpointRateEditor endpoints={endpoints} onEndpointsChange={setEndpoints} />
+            <EndpointRateEditor 
+              endpoints={paginatedEndpoints} 
+              allEndpoints={endpoints}
+              startIndex={startIndex}
+              onEndpointsChange={(updatedPageEndpoints) => {
+                const newEndpoints = [...endpoints];
+                updatedPageEndpoints.forEach((ep, idx) => {
+                  newEndpoints[startIndex + idx] = ep;
+                });
+                setEndpoints(newEndpoints);
+              }} 
+            />
+            
+            {/* Pagination Controls */}
+            {endpoints.length > ENDPOINTS_PER_PAGE && (
+              <div className="mt-4 flex items-center justify-between rounded-lg border border-monokai-gray/30 bg-monokai-gray/10 p-3">
+                <div className="text-sm text-monokai-gray">
+                  Showing {startIndex + 1}-{Math.min(endIndex, endpoints.length)} of {endpoints.length} endpoints
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="rounded bg-monokai-gray/20 px-3 py-1 text-sm font-bold text-monokai-fg transition-colors hover:bg-monokai-gray/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <div className="flex items-center gap-2 px-3 text-sm font-mono text-monokai-fg">
+                    <span>{currentPage}</span>
+                    <span className="text-monokai-gray">/</span>
+                    <span>{totalPages}</span>
+                  </div>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="rounded bg-monokai-gray/20 px-3 py-1 text-sm font-bold text-monokai-fg transition-colors hover:bg-monokai-gray/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end pt-4">

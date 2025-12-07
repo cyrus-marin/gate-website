@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: Request) {
     try {
@@ -16,20 +16,55 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid data' }, { status: 400 });
         }
 
-        // Get authenticated user
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        
-        if (authError || !user) {
+        // Get auth token from headers (could be Supabase token or Web3 wallet address)
+        const authHeader = request.headers.get('Authorization');
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
             return NextResponse.json({ error: 'Unauthorized. Please sign in.' }, { status: 401 });
         }
 
-        // 1. Insert Service with user_id
+        const token = authHeader.replace('Bearer ', '');
+        let userId: string;
+        
+        // Check if token is a Web3 wallet address (starts with 0x)
+        if (token.startsWith('0x') && token.length === 42) {
+            // Web3 wallet authentication
+            userId = token.toLowerCase(); // Normalize wallet address
+        } else {
+            // Supabase token authentication
+            const supabase = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                {
+                    global: {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    },
+                }
+            );
+
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
+            
+            if (authError || !user) {
+                return NextResponse.json({ error: 'Unauthorized. Please sign in.' }, { status: 401 });
+            }
+            
+            userId = user.id;
+        }
+
+        // Create Supabase client for database operations
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+
+        // 1. Insert Service with user_id (works for both Supabase UUIDs and wallet addresses)
         const { data: service, error: serviceError } = await supabase
             .from('services')
             .insert({ 
                 name: serviceName, 
                 description,
-                user_id: user.id 
+                user_id: userId 
             })
             .select()
             .single();
@@ -45,8 +80,10 @@ export async function POST(request: Request) {
             method: ep.method,
             path: ep.path,
             description: ep.description,
-            rate: ep.rate || 0,
+            rate: ep.rate || 0, // Legacy field
             rate_unit: ep.rateUnit || 'per_request',
+            token: ep.token || 'MON',
+            token_amount: ep.tokenAmount || 0,
         }));
 
         const { error: endpointsError } = await supabase

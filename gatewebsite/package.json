@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "contracts:compile": "npx hardhat compile",
+    "contracts:deploy": "npx hardhat run contracts/deploy/deploy.ts --network monadTestnet",
+    "contracts:verify": "npx hardhat verify --network monadTestnet",
+    "contracts:test": "npx hardhat test",
+    "demo-api": "npx http-server tmp/demo-api -p 8081 --cors"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.86.2",

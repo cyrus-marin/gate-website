@@ -6,9 +6,12 @@ export interface Endpoint {
     method: string;
     path: string;
     description?: string;
-    rate?: number; // Cost per request in cents
+    rate?: number; // Legacy: Cost per request in cents (deprecated)
     rateUnit?: string; // e.g., 'per_request', 'per_1k_requests'
     rate_unit?: string; // Database field name (snake_case)
+    token?: string; // Token symbol (MON, ETH, USDC, etc.)
+    tokenAmount?: number; // Amount in token units
+    token_amount?: number; // Database field name (snake_case)
 }
 
 interface EndpointTableProps {
@@ -24,10 +27,9 @@ const METHOD_COLORS: Record<string, string> = {
     PATCH: 'text-monokai-purple',
 };
 
-function formatPrice(cents: number, unit: string): string {
-    const dollars = cents / 100;
+function formatPrice(tokenAmount: number, token: string, unit: string): string {
     const unitText = unit === 'per_1k_requests' ? '1K requests' : unit === 'per_10k_requests' ? '10K requests' : 'request';
-    return `$${dollars.toFixed(2)} / ${unitText}`;
+    return `${tokenAmount.toFixed(3)} ${token} / ${unitText}`;
 }
 
 export default function EndpointTable({ endpoints, className }: EndpointTableProps) {
@@ -52,7 +54,8 @@ export default function EndpointTable({ endpoints, className }: EndpointTablePro
                 </thead>
                 <tbody className="divide-y divide-monokai-gray/30 bg-monokai-bg">
                     {endpoints.map((endpoint, index) => {
-                        const rate = endpoint.rate ?? 0;
+                        const tokenAmount = endpoint.token_amount || endpoint.tokenAmount || 0;
+                        const token = endpoint.token || 'MON';
                         const unit = endpoint.rate_unit || endpoint.rateUnit || 'per_request';
                         
                         return (
@@ -67,10 +70,10 @@ export default function EndpointTable({ endpoints, className }: EndpointTablePro
                                     {endpoint.description || '-'}
                                 </td>
                                 <td className="px-6 py-4 font-mono text-monokai-green">
-                                    {rate === 0 ? (
+                                    {tokenAmount === 0 ? (
                                         <span className="text-monokai-gray">Free</span>
                                     ) : (
-                                        formatPrice(rate, unit)
+                                        formatPrice(tokenAmount, token, unit)
                                     )}
                                 </td>
                             </tr>

@@ -5,6 +5,8 @@ import { Endpoint } from './EndpointTable';
 
 interface EndpointRateEditorProps {
     endpoints: Endpoint[];
+    allEndpoints?: Endpoint[];
+    startIndex?: number;
     onEndpointsChange: (endpoints: Endpoint[]) => void;
     className?: string;
 }
@@ -17,7 +19,7 @@ const METHOD_COLORS: Record<string, string> = {
     PATCH: 'text-monokai-purple',
 };
 
-export default function EndpointRateEditor({ endpoints, onEndpointsChange, className }: EndpointRateEditorProps) {
+export default function EndpointRateEditor({ endpoints, allEndpoints, startIndex = 0, onEndpointsChange, className }: EndpointRateEditorProps) {
     const updateEndpoint = (index: number, field: keyof Endpoint, value: any) => {
         const updated = [...endpoints];
         updated[index] = { ...updated[index], [field]: value };
@@ -56,23 +58,35 @@ export default function EndpointRateEditor({ endpoints, onEndpointsChange, class
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 pl-[4.5rem]">
+                    <div className="grid grid-cols-3 gap-3 pl-[4.5rem]">
                         <div>
                             <label className="block text-xs font-bold text-monokai-gray mb-1">
-                                💵 Price
+                                💰 Token
                             </label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-monokai-gray text-sm">$</span>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={endpoint.rate ? (endpoint.rate / 100).toFixed(2) : ''}
-                                    onChange={(e) => updateEndpoint(index, 'rate', Math.round(parseFloat(e.target.value) * 100) || 0)}
-                                    placeholder="0.00"
-                                    className="w-full rounded border border-monokai-gray/50 bg-monokai-bg/50 pl-7 pr-3 py-1.5 text-sm text-monokai-fg placeholder:text-monokai-gray/50 focus:border-monokai-pink focus:outline-none"
-                                />
-                            </div>
+                            <select
+                                value={endpoint.token || 'MON'}
+                                onChange={(e) => updateEndpoint(index, 'token', e.target.value)}
+                                className="w-full rounded border border-monokai-gray/50 bg-monokai-bg/50 px-3 py-1.5 text-sm text-monokai-fg focus:border-monokai-pink focus:outline-none"
+                            >
+                                <option value="MON">MON</option>
+                                <option value="ETH">ETH</option>
+                                <option value="USDC">USDC</option>
+                                <option value="USDT">USDT</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-monokai-gray mb-1">
+                                💵 Amount
+                            </label>
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.001"
+                                value={endpoint.tokenAmount || ''}
+                                onChange={(e) => updateEndpoint(index, 'tokenAmount', parseFloat(e.target.value) || 0)}
+                                placeholder="0.000"
+                                className="w-full rounded border border-monokai-gray/50 bg-monokai-bg/50 px-3 py-1.5 text-sm text-monokai-fg placeholder:text-monokai-gray/50 focus:border-monokai-pink focus:outline-none"
+                            />
                         </div>
                         <div>
                             <label className="block text-xs font-bold text-monokai-gray mb-1">

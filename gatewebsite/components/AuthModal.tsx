@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { Loader2, X } from 'lucide-react';
+import { Loader2, X, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ENABLE_WEB3 } from '@/lib/monad-config';
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -16,8 +17,58 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [walletLoading, setWalletLoading] = useState(false);
     const [error, setError] = useState('');
-    const { signIn, signUp } = useAuth();
+    const { signIn, signUp, signInWithWallet } = useAuth();
+
+    const handleWeb3SignIn = async () => {
+        setError('');
+        setWalletLoading(true);
+
+        try {
+            // Check if window.ethereum is available
+            if (typeof window !== 'undefined' && (window as any).ethereum) {
+                const ethereum = (window as any).ethereum;
+                
+                // Request account access
+                const accounts = await ethereum.request({ 
+                    method: 'eth_requestAccounts' 
+                });
+                
+                const address = accounts[0];
+                
+                // Create a message to sign
+                const message = `Sign in to Gate402\n\nAddress: ${address}\nTimestamp: ${Date.now()}`;
+                
+                // Request signature
+                const signature = await ethereum.request({
+                    method: 'personal_sign',
+                    params: [message, address],
+                });
+
+                // Use the new signInWithWallet function from auth context
+                const { error: walletError } = await signInWithWallet(address, signature);
+                
+                if (walletError) {
+                    throw new Error(walletError.message || 'Failed to authenticate with Web3 wallet');
+                }
+                
+                onSuccess?.();
+                onClose();
+            } else {
+                setError('No Web3 wallet detected. Please install MetaMask or another Web3 wallet.');
+            }
+        } catch (err: any) {
+            console.error('Web3 sign-in error:', err);
+            if (err.code === 4001) {
+                setError('Wallet connection rejected. Please try again.');
+            } else {
+                setError(err.message || 'Failed to connect wallet');
+            }
+        } finally {
+            setWalletLoading(false);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -62,6 +113,34 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                 <h2 className="mb-6 text-2xl font-bold text-monokai-fg">
                     {mode === 'signin' ? 'Sign In' : 'Sign Up'}
                 </h2>
+
+                {/* Web3 Wallet Sign In */}
+                {mode === 'signin' && ENABLE_WEB3 && (
+                    <div className="mb-6">
+                        <button
+                            onClick={handleWeb3SignIn}
+                            disabled={walletLoading}
+                            type="button"
+                            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-monokai-purple bg-monokai-purple/10 px-6 py-3 font-bold text-monokai-purple transition-all hover:bg-monokai-purple/20 hover:scale-105 disabled:opacity-50"
+                        >
+                            {walletLoading ? (
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                            ) : (
+                                <Wallet className="h-5 w-5" />
+                            )}
+                            Connect Web3 Wallet
+                        </button>
+                        
+                        <div className="relative my-6">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-monokai-gray/30"></div>
+                            </div>
+                            <div className="relative flex justify-center text-sm">
+                                <span className="bg-monokai-bg px-3 text-monokai-gray">or continue with email</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
